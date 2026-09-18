@@ -1,12 +1,14 @@
-<!DOCTYPE html>  <html lang="pt-BR">  
+<!DOCTYPE html>  
+<html lang="pt-BR">  
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>Calculadora de Horário de Saída</title>  
+    <title>Calculadora de jornada</title>  
     <!-- Fonte Inter para um design limpo e moderno -->  
     <link rel="preconnect" href="https://fonts.googleapis.com">  
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>  
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">  <style>  
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">  
+    <style>  
     :root {  
         --bg-color: #f8fafc;  
         --card-bg: #ffffff;  
@@ -110,7 +112,7 @@
 
     .actions {  
         display: grid;  
-        grid-template-columns: 2fr 1fr;  
+        grid-template-columns: 1fr;  
         gap: 10px;  
         margin-bottom: 28px;  
     }  
@@ -123,15 +125,6 @@
         border: none;  
         cursor: pointer;  
         transition: all 0.2s ease;  
-    }  
-
-    .btn-primary {  
-        background-color: var(--primary);  
-        color: white;  
-    }  
-
-    .btn-primary:hover {  
-        background-color: var(--primary-hover);  
     }  
 
     .btn-secondary {  
@@ -267,35 +260,24 @@
             align-self: flex-end;  
         }  
     }  
-</style>
-
+</style>  
 </head>  
-<body>  <div class="container">  
+<body>  
+<div class="container">  
     <header>  
         <h1>Calculadora de Horário de Saída</h1>  
         <p>Controle de limite e horas extras</p>  
     </header>  
 
-    <form id="calc-form" onsubmit="event.preventDefault(); calculate();">  
+    <form id="calc-form" onsubmit="event.preventDefault();">  
         <div class="inputs-grid">  
             <div class="input-group">  
-                <label for="entrada">Horário de Entrada</label>  
+                <label for="entrada">Que horas você entrou?</label>  
                 <input type="time" id="entrada" required oninput="calculate()">  
-            </div>  
-
-            <div class="input-group">  
-                <label for="saida-janta">Saída para Janta</label>  
-                <input type="time" id="saida-janta" required oninput="calculate()">  
-            </div>  
-
-            <div class="input-group">  
-                <label for="retorno-janta">Retorno da Janta</label>  
-                <input type="time" id="retorno-janta" required oninput="calculate()">  
             </div>  
         </div>  
 
         <div class="actions">  
-            <button type="submit" class="btn btn-primary">Calcular</button>  
             <button type="button" class="btn btn-secondary" onclick="clearFields()">Limpar</button>  
         </div>  
     </form>  
@@ -325,16 +307,20 @@
 
         <div class="details-box">  
             <div class="details-row">  
-                <span>Trabalhado antes da janta:</span>  
-                <span id="det-antes-janta">--</span>  
+                <span>Jornada normal:</span>  
+                <span>8h 48min</span>  
             </div>  
             <div class="details-row">  
-                <span>Jornada normal restante:</span>  
-                <span id="det-restante">--</span>  
+                <span>Intervalo considerado:</span>  
+                <span>1h</span>  
             </div>  
             <div class="details-row">  
-                <span>Intervalo de refeição:</span>  
-                <span id="det-intervalo">--</span>  
+                <span>Hora extra:</span>  
+                <span>1h</span>  
+            </div>  
+            <div class="details-row">  
+                <span>Limite máximo:</span>  
+                <span>1h 12min</span>  
             </div>  
         </div>  
     </div>  
@@ -349,7 +335,7 @@
     }  
 
     function minutesToTime(totalMinutes) {  
-        // Garante rotação completa em relação às 24h  
+        // Garante rotação completa em relação às 24h (virada da noite)
         let mins = totalMinutes % (24 * 60);  
         if (mins < 0) mins += 24 * 60;  
           
@@ -358,106 +344,41 @@
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;  
     }  
 
-    function formatDuration(minutes) {  
-        const h = Math.floor(minutes / 60);  
-        const m = minutes % 60;  
-        if (h === 0) return `${m}min`;  
-        if (m === 0) return `${h}h`;  
-        return `${h}h ${String(m).padStart(2, '0')}min`;  
-    }  
-
     function calculate() {  
         const entradaVal = document.getElementById('entrada').value;  
-        const saidaJantaVal = document.getElementById('saida-janta').value;  
-        const retornoJantaVal = document.getElementById('retorno-janta').value;  
         const errorElement = document.getElementById('error-msg');  
 
         // Reseta mensagem de erro  
         errorElement.style.display = 'none';  
         errorElement.innerText = '';  
 
-        // Se algum campo não estiver preenchido, apenas aguarda  
-        if (!entradaVal || !saidaJantaVal || !retornoJantaVal) {  
+        // Se a entrada estiver vazia, volta os resultados para '--:--'
+        if (!entradaVal) {  
             resetResults();  
             return;  
         }  
 
         const entrada = timeToMinutes(entradaVal);  
-        let saidaJanta = timeToMinutes(saidaJantaVal);  
-        let retornoJanta = timeToMinutes(retornoJantaVal);  
-
-        // Se o horário de saída da janta for menor que a entrada (virada da noite antes da janta)  
-        if (saidaJanta < entrada) {  
-            saidaJanta += 24 * 60;  
-        }  
-
-        // Se o retorno da janta for menor que a saída para janta (virada da noite durante a janta)  
-        if (retornoJanta < (saidaJanta % (24 * 60))) {  
-            retornoJanta += 24 * 60;  
-        } else if (retornoJanta < saidaJanta) {  
-            retornoJanta += 24 * 60;  
-        }  
-
-        // Validações  
-        if (saidaJanta <= entrada) {  
-            showError("A saída para a janta deve ser posterior ao horário de entrada.");  
-            resetResults();  
-            return;  
-        }  
-
-        if (retornoJanta <= saidaJanta) {  
-            showError("O retorno da janta deve ser posterior ao horário de saída para a janta.");  
-            resetResults();  
-            return;  
-        }  
 
         // Constantes do negócio em minutos  
-        const JORNADA_NORMAL = 8 * 60 + 48; // 8h48m = 528 min  
-        const EXTRA_1H = 60;                // 1h = 60 min  
-        const EXTRA_1H12 = 1 * 60 + 12;     // 1h12m = 72 min  
+        // 8h48m (Jornada) + 1h (Intervalo) + 1h (Extra) = 10h48m (648 min)
+        const PERMANENCIA_1H_EXTRA = 10 * 60 + 48; 
 
-        // Cálculos  
-        const trabalhadoAntesJanta = saidaJanta - entrada;  
-        const duracaoIntervalo = retornoJanta - saidaJanta;  
+        // 8h48m (Jornada) + 1h (Intervalo) + 1h12m (Extra Máxima) = 11h (660 min)
+        const PERMANENCIA_LIMITE = 11 * 60; 
 
-        // Restante para cumprir a jornada normal de 8h48m  
-        const restanteJornadaNormal = JORNADA_NORMAL - trabalhadoAntesJanta;  
-
-        if (restanteJornadaNormal < 0) {  
-            showError("O tempo trabalhado antes da janta ultrapassa a jornada normal do dia.");  
-            resetResults();  
-            return;  
-        }  
-
-        // Horários finais de saída a partir do retorno da janta  
-        // Saída com 1h extra: Retorno + Restante Normal + 1h  
-        const minutosSaida1h = retornoJanta + restanteJornadaNormal + EXTRA_1H;  
-
-        // Saída com 1h12m extra: Retorno + Restante Normal + 1h12m  
-        const minutosSaida1h12 = retornoJanta + restanteJornadaNormal + EXTRA_1H12;  
+        // Cálculos dos horários de saída
+        const minutosSaida1h = entrada + PERMANENCIA_1H_EXTRA;  
+        const minutosSaida1h12 = entrada + PERMANENCIA_LIMITE;  
 
         // Exibição dos Resultados nos Cards  
         document.getElementById('res-1h').innerText = minutesToTime(minutosSaida1h);  
         document.getElementById('res-1h12').innerText = minutesToTime(minutosSaida1h12);  
-
-        // Exibição dos Detalhes  
-        document.getElementById('det-antes-janta').innerText = formatDuration(trabalhadoAntesJanta);  
-        document.getElementById('det-restante').innerText = formatDuration(restanteJornadaNormal);  
-        document.getElementById('det-intervalo').innerText = formatDuration(duracaoIntervalo);  
-    }  
-
-    function showError(msg) {  
-        const errorElement = document.getElementById('error-msg');  
-        errorElement.innerText = msg;  
-        errorElement.style.display = 'block';  
     }  
 
     function resetResults() {  
         document.getElementById('res-1h').innerText = '--:--';  
         document.getElementById('res-1h12').innerText = '--:--';  
-        document.getElementById('det-antes-janta').innerText = '--';  
-        document.getElementById('det-restante').innerText = '--';  
-        document.getElementById('det-intervalo').innerText = '--';  
     }  
 
     function clearFields() {  
@@ -465,7 +386,6 @@
         document.getElementById('error-msg').style.display = 'none';  
         resetResults();  
     }  
-</script>
-
+</script>  
 </body>  
-</html>  
+</html>
