@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>  
 <html lang="pt-BR">  
 <head>  
@@ -91,7 +92,8 @@
         color: var(--text-main);  
     }  
 
-    .input-group input {  
+    .input-group input,
+    .input-group select {  
         width: 100%;  
         padding: 12px 16px;  
         font-size: 1.1rem;  
@@ -102,9 +104,26 @@
         transition: all 0.2s ease;  
         background-color: #f8fafc;  
         color: var(--text-main);  
+        appearance: none;
     }  
 
-    .input-group input:focus {  
+    .select-wrapper {
+        position: relative;
+    }
+
+    .select-wrapper::after {
+        content: '▼';
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {  
         border-color: var(--primary);  
         background-color: #ffffff;  
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);  
@@ -272,7 +291,17 @@
     <form id="calc-form" onsubmit="event.preventDefault();">  
         <div class="inputs-grid">  
             <div class="input-group">  
-                <label for="entrada">Que horas você entrou?</label>  
+                <label for="jornada">Selecione sua jornada</label>  
+                <div class="select-wrapper">
+                    <select id="jornada" onchange="updateView(); calculate();">
+                        <option value="8h48">Jornada 8h48</option>
+                        <option value="6h00">Jornada 6h00</option>
+                    </select>
+                </div>
+            </div>  
+
+            <div class="input-group">  
+                <label for="entrada">Horário de Entrada</label>  
                 <input type="time" id="entrada" required oninput="calculate()">  
             </div>  
         </div>  
@@ -290,38 +319,23 @@
         <div class="cards-grid">  
             <div class="card card-green">  
                 <div class="card-info">  
-                    <span class="card-title">🟢 Com 1h Extra</span>  
-                    <span class="card-subtitle">9h48m trabalhadas</span>  
+                    <span class="card-title" id="title-card-1">🟢 Com 1h Extra</span>  
+                    <span class="card-subtitle" id="sub-card-1">9h48m trabalhadas</span>  
                 </div>  
                 <div class="card-value" id="res-1h">--:--</div>  
             </div>  
 
             <div class="card card-red">  
                 <div class="card-info">  
-                    <span class="card-title">🔴 Limite Máximo</span>  
-                    <span class="card-subtitle">10h00m trabalhadas (+1h12)</span>  
+                    <span class="card-title" id="title-card-2">🔴 Limite Máximo</span>  
+                    <span class="card-subtitle" id="sub-card-2">10h00m trabalhadas (+1h12)</span>  
                 </div>  
                 <div class="card-value" id="res-1h12">--:--</div>  
             </div>  
         </div>  
 
-        <div class="details-box">  
-            <div class="details-row">  
-                <span>Jornada normal:</span>  
-                <span>8h 48min</span>  
-            </div>  
-            <div class="details-row">  
-                <span>Intervalo considerado:</span>  
-                <span>1h</span>  
-            </div>  
-            <div class="details-row">  
-                <span>Hora extra:</span>  
-                <span>1h</span>  
-            </div>  
-            <div class="details-row">  
-                <span>Limite máximo:</span>  
-                <span>1h 12min</span>  
-            </div>  
+        <div class="details-box" id="details-box">  
+            <!-- Preenchido dinamicamente via JS -->
         </div>  
     </div>  
 </div>  
@@ -344,8 +358,70 @@
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;  
     }  
 
+    function updateView() {
+        const jornada = document.getElementById('jornada').value;
+        const title1 = document.getElementById('title-card-1');
+        const sub1 = document.getElementById('sub-card-1');
+        const title2 = document.getElementById('title-card-2');
+        const sub2 = document.getElementById('sub-card-2');
+        const detailsBox = document.getElementById('details-box');
+
+        if (jornada === '8h48') {
+            title1.innerText = '🟢 Com 1h Extra';
+            sub1.innerText = '9h48m trabalhadas';
+            sub1.style.display = 'block';
+
+            title2.innerText = '🔴 Limite Máximo';
+            sub2.innerText = '10h00m trabalhadas (+1h12)';
+            sub2.style.display = 'block';
+
+            detailsBox.innerHTML = `
+                <div class="details-row">
+                    <span>Jornada normal:</span>
+                    <span>8h 48min</span>
+                </div>
+                <div class="details-row">
+                    <span>Intervalo considerado:</span>
+                    <span>1h</span>
+                </div>
+                <div class="details-row">
+                    <span>Hora extra:</span>
+                    <span>1h</span>
+                </div>
+                <div class="details-row">
+                    <span>Limite máximo:</span>
+                    <span>1h 12min</span>
+                </div>
+            `;
+        } else if (jornada === '6h00') {
+            title1.innerText = '🟢 Jornada de 6h';
+            sub1.innerText = '';
+            sub1.style.display = 'none';
+
+            title2.innerText = '🔴 Limite com Intervalo';
+            sub2.innerText = '';
+            sub2.style.display = 'none';
+
+            detailsBox.innerHTML = `
+                <div class="details-row">
+                    <span>Jornada normal:</span>
+                    <span>6h</span>
+                </div>
+                <div class="details-row">
+                    <span>Intervalo:</span>
+                    <span>15min</span>
+                </div>
+                <div class="details-row">
+                    <span>Limite de trabalho:</span>
+                    <span>6h</span>
+                </div>
+            `;
+        }
+    }
+
     function calculate() {  
         const entradaVal = document.getElementById('entrada').value;  
+        const jornada = document.getElementById('jornada').value;
         const errorElement = document.getElementById('error-msg');  
 
         // Reseta mensagem de erro  
@@ -359,21 +435,29 @@
         }  
 
         const entrada = timeToMinutes(entradaVal);  
+        let minutosSaida1, minutosSaida2;
 
-        // Constantes do negócio em minutos  
-        // 8h48m (Jornada) + 1h (Intervalo) + 1h (Extra) = 10h48m (648 min)
-        const PERMANENCIA_1H_EXTRA = 10 * 60 + 48; 
+        if (jornada === '8h48') {
+            // 8h48m (Jornada) + 1h (Intervalo) + 1h (Extra) = 10h48m (648 min)
+            const PERMANENCIA_1H_EXTRA = 10 * 60 + 48; 
+            // 8h48m (Jornada) + 1h (Intervalo) + 1h12m (Extra Máxima) = 11h (660 min)
+            const PERMANENCIA_LIMITE = 11 * 60; 
 
-        // 8h48m (Jornada) + 1h (Intervalo) + 1h12m (Extra Máxima) = 11h (660 min)
-        const PERMANENCIA_LIMITE = 11 * 60; 
+            minutosSaida1 = entrada + PERMANENCIA_1H_EXTRA;  
+            minutosSaida2 = entrada + PERMANENCIA_LIMITE;  
+        } else if (jornada === '6h00') {
+            // 6h00m trabalhadas = entrada + 6h (360 min)
+            const PERMANENCIA_6H = 6 * 60;
+            // 6h00m trabalhadas + 15m intervalo = entrada + 6h15m (375 min)
+            const PERMANENCIA_6H_INTERVALO = 6 * 60 + 15;
 
-        // Cálculos dos horários de saída
-        const minutosSaida1h = entrada + PERMANENCIA_1H_EXTRA;  
-        const minutosSaida1h12 = entrada + PERMANENCIA_LIMITE;  
+            minutosSaida1 = entrada + PERMANENCIA_6H;
+            minutosSaida2 = entrada + PERMANENCIA_6H_INTERVALO;
+        }
 
         // Exibição dos Resultados nos Cards  
-        document.getElementById('res-1h').innerText = minutesToTime(minutosSaida1h);  
-        document.getElementById('res-1h12').innerText = minutesToTime(minutosSaida1h12);  
+        document.getElementById('res-1h').innerText = minutesToTime(minutosSaida1);  
+        document.getElementById('res-1h12').innerText = minutesToTime(minutosSaida2);  
     }  
 
     function resetResults() {  
@@ -384,8 +468,12 @@
     function clearFields() {  
         document.getElementById('calc-form').reset();  
         document.getElementById('error-msg').style.display = 'none';  
+        updateView();
         resetResults();  
     }  
+
+    // Inicialização da interface
+    updateView();
 </script>  
 </body>  
 </html>
